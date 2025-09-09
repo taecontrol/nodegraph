@@ -8,7 +8,6 @@ use InvalidArgumentException;
  * Class Graph
  *
  * @template TState
- * @package Taecontrol\NodeGraph
  */
 abstract class Graph implements Contracts\Graph
 {
@@ -20,12 +19,11 @@ abstract class Graph implements Contracts\Graph
     /**
      * Adds a new State to the graph.
      *
-     * @param TState $state
-     * @return void
+     * @param  TState  $state
      */
     public function addState($state): void
     {
-        if (!array_key_exists($state, $this->nodes)) {
+        if (! array_key_exists($state, $this->nodes)) {
             $this->nodes[$state] = [];
         }
     }
@@ -33,16 +31,15 @@ abstract class Graph implements Contracts\Graph
     /**
      * Adds a directed edge from one state to another.
      *
-     * @param TState $from
-     * @param TState $to
-     * @return void
+     * @param  TState  $from
+     * @param  TState  $to
      */
     public function addEdge($from, $to): void
     {
         $this->addState($from);
         $this->addState($to);
 
-        if (!in_array($to, $this->nodes[$from], true)) {
+        if (! in_array($to, $this->nodes[$from], true)) {
             $this->nodes[$from][] = $to;
         }
     }
@@ -50,7 +47,7 @@ abstract class Graph implements Contracts\Graph
     /**
      * Returns the neighboring states of a given state.
      *
-     * @param TState $state
+     * @param  TState  $state
      * @return array<int, TState>
      */
     public function neighbors($state): array
@@ -61,9 +58,8 @@ abstract class Graph implements Contracts\Graph
     /**
      * Checks if a transition from one state to another is possible.
      *
-     * @param TState $from
-     * @param TState $to
-     * @return bool
+     * @param  TState  $from
+     * @param  TState  $to
      */
     public function canTransition($from, $to): bool
     {
@@ -73,9 +69,8 @@ abstract class Graph implements Contracts\Graph
     /**
      * Asserts that a transition from one state to another is valid.
      *
-     * @param TState $from
-     * @param TState $to
-     * @return void
+     * @param  TState  $from
+     * @param  TState  $to
      *
      * @throws InvalidArgumentException if the transition is not allowed
      */
@@ -89,8 +84,7 @@ abstract class Graph implements Contracts\Graph
     /**
      * Checks if the given state is a terminal state.
      *
-     * @param TState $state
-     * @return bool
+     * @param  TState  $state
      */
     public function isTerminal($state): bool
     {

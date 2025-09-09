@@ -8,7 +8,6 @@ use InvalidArgumentException;
  * Interface Graph
  *
  * @template TState
- * @package Taecontrol\NodeGraph\Contracts
  */
 interface Graph
 {
@@ -20,35 +19,31 @@ interface Graph
     public function initialState();
 
     /**
-     * @param TState $state
-     * @return void
+     * @param  TState  $state
      */
     public function addState($state): void;
 
     /**
-     * @param TState $from
-     * @param TState $to
-     * @return void
+     * @param  TState  $from
+     * @param  TState  $to
      */
     public function addEdge($from, $to): void;
 
     /**
-     * @param TState $state
+     * @param  TState  $state
      * @return array<int, TState>
      */
     public function neighbors($state): array;
 
     /**
-     * @param TState $from
-     * @param TState $to
-     * @return bool
+     * @param  TState  $from
+     * @param  TState  $to
      */
     public function canTransition($from, $to): bool;
 
     /**
-     * @param TState $from
-     * @param TState $to
-     * @return void
+     * @param  TState  $from
+     * @param  TState  $to
      *
      * @throws InvalidArgumentException if the transition is not allowed
      */
@@ -57,9 +52,7 @@ interface Graph
     /**
      * Checks if the given state is a terminal state.
      *
-     * @param TState $state
-     * @return bool
+     * @param  TState  $state
      */
     public function isTerminal($state): bool;
-
 }
