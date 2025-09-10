@@ -27,7 +27,7 @@ abstract class Node implements Contracts\Node
         $endTime = microtime(true);
         $executionTime = $endTime - $startTime;
 
-        $result->addMetadata('state', $data->thread()->state);
+        $result->addMetadata('state', $data->thread()->current_state);
         $result->addMetadata('execution_time', $executionTime);
 
         return $result;

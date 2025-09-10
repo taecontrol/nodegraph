@@ -37,8 +37,8 @@ class Thread extends Model
 
     protected function getCastType($key)
     {
-        if ($key === 'state' && config('node-graph.thread_state_enum')) {
-            return config('node-graph.thread_state_enum');
+        if ($key === 'current_state' && config('nodegraph.state_enum')) {
+            return config('nodegraph.state_enum');
         }
 
         return parent::getCastType($key);

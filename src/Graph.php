@@ -51,7 +51,7 @@ abstract class Graph implements Contracts\Graph
         $thread = $context->thread();
 
         if ($thread->current_state === null) {
-            $thread->current_state = $this->initialState()->value;
+            $thread->current_state = $this->initialState();
             $thread->save();
         }
 
@@ -156,7 +156,7 @@ abstract class Graph implements Contracts\Graph
         $thread = $context->thread();
 
         if ($newState !== null) {
-            $thread->current_state = $newState->value;
+            $thread->current_state = $newState;
             $thread->save();
         }
 
@@ -172,7 +172,7 @@ abstract class Graph implements Contracts\Graph
     protected function createCheckpoint($thread, $decision): void
     {
         $thread->checkpoints()->create([
-            'state' => $decision->nextState()->value,
+            'state' => $decision->nextState(),
             'metadata' => $decision->metadata(),
         ]);
     }

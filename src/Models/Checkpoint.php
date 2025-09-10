@@ -23,4 +23,13 @@ class Checkpoint extends Model
     {
         return $this->belongsTo(Thread::class);
     }
+
+    protected function getCastType($key)
+    {
+        if ($key === 'state' && config('nodegraph.state_enum')) {
+            return config('nodegraph.state_enum');
+        }
+
+        return parent::getCastType($key);
+    }
 }
