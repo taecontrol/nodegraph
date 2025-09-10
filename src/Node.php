@@ -37,6 +37,7 @@ abstract class Node implements Contracts\Node
      * Handle the given data.
      *
      * @param  TContext  $data
+     * @return TDecision
      */
-    abstract public function handle($data): Decision;
+    abstract public function handle($data);
 }
