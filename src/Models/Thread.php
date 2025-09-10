@@ -13,7 +13,11 @@ class Thread extends Model
     use HasUlids;
     use SoftDeletes;
 
-    public $guarded = [];
+    protected $guarded = [];
+
+    protected $casts = [
+        'metadata' => 'array',
+    ];
 
     /**
      * Get the parent threadable model (morph to).
