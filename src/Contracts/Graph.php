@@ -2,6 +2,7 @@
 
 namespace Taecontrol\NodeGraph\Contracts;
 
+use BackedEnum;
 use InvalidArgumentException;
 
 /**
@@ -13,46 +14,38 @@ interface Graph
 {
     /**
      * Returns the initial state of the graph.
-     *
-     * @return TState $state
      */
-    public function initialState();
+    public function initialState(): BackedEnum&HasNode;
 
     /**
-     * @param  TState  $state
+     * Adds a new State to the graph.
      */
-    public function addState($state): void;
+    public function addState(BackedEnum&HasNode $state): void;
 
     /**
-     * @param  TState  $from
-     * @param  TState  $to
+     * Adds a directed edge from one state to another.
      */
-    public function addEdge($from, $to): void;
+    public function addEdge(BackedEnum&HasNode $from, BackedEnum&HasNode $to): void;
 
     /**
-     * @param  TState  $state
-     * @return array<int, TState>
+     * Returns the neighboring states of a given state.
+     * @return array<int, BackedEnum&HasNode>
      */
-    public function neighbors($state): array;
+    public function neighbors(BackedEnum&HasNode $state): array;
 
     /**
-     * @param  TState  $from
-     * @param  TState  $to
+     * Checks if a transition from one state to another is possible.
      */
-    public function canTransition($from, $to): bool;
+    public function canTransition(BackedEnum&HasNode $from, BackedEnum&HasNode $to): bool;
 
     /**
-     * @param  TState  $from
-     * @param  TState  $to
-     *
+     * Asserts that a transition from one state to another is possible.
      * @throws InvalidArgumentException if the transition is not allowed
      */
-    public function assert($from, $to): void;
+    public function assert(BackedEnum&HasNode $from, BackedEnum&HasNode $to): void;
 
     /**
      * Checks if the given state is a terminal state.
-     *
-     * @param  TState  $state
      */
-    public function isTerminal($state): bool;
+    public function isTerminal(BackedEnum&HasNode $state): bool;
 }

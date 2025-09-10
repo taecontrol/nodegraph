@@ -2,12 +2,12 @@
 
 namespace Taecontrol\NodeGraph;
 
+use BackedEnum;
 use InvalidArgumentException;
+use Taecontrol\NodeGraph\Contracts\HasNode;
 
 /**
  * Class Graph
- *
- * @template TState
  */
 abstract class Graph implements Contracts\Graph
 {
@@ -18,50 +18,41 @@ abstract class Graph implements Contracts\Graph
 
     /**
      * Adds a new State to the graph.
-     *
-     * @param  TState  $state
      */
-    public function addState($state): void
+    public function addState(BackedEnum&HasNode $state): void
     {
-        if (! array_key_exists($state, $this->nodes)) {
-            $this->nodes[$state] = [];
+        if (! array_key_exists($state->value, $this->nodes)) {
+            $this->nodes[$state->value] = [];
         }
     }
 
     /**
      * Adds a directed edge from one state to another.
-     *
-     * @param  TState  $from
-     * @param  TState  $to
      */
-    public function addEdge($from, $to): void
+    public function addEdge(BackedEnum&HasNode $from, BackedEnum&HasNode $to): void
     {
         $this->addState($from);
         $this->addState($to);
 
-        if (! in_array($to, $this->nodes[$from], true)) {
-            $this->nodes[$from][] = $to;
+        if (! in_array($to, $this->nodes[$from->value], true)) {
+            $this->nodes[$from->value][] = $to;
         }
     }
 
     /**
      * Returns the neighboring states of a given state.
      *
-     * @param  TState  $state
-     * @return array<int, TState>
+     * @return array<int, BackedEnum&HasNode>
      */
-    public function neighbors($state): array
+    public function neighbors(BackedEnum&HasNode $state): array
     {
-        return $this->nodes[$state] ?? [];
+        return $this->nodes[$state->value] ?? [];
     }
 
     /**
      * Checks if a transition from one state to another is possible.
-     *
-     * @param  TState  $from
-     * @param  TState  $to
      */
-    public function canTransition($from, $to): bool
+    public function canTransition(BackedEnum&HasNode $from, BackedEnum&HasNode $to): bool
     {
         return in_array($to, $this->neighbors($from), true);
     }
@@ -69,24 +60,19 @@ abstract class Graph implements Contracts\Graph
     /**
      * Asserts that a transition from one state to another is valid.
      *
-     * @param  TState  $from
-     * @param  TState  $to
-     *
      * @throws InvalidArgumentException if the transition is not allowed
      */
-    public function assert($from, $to): void
+    public function assert(BackedEnum&HasNode $from, BackedEnum&HasNode $to): void
     {
         if (! $this->canTransition($from, $to)) {
-            throw new InvalidArgumentException("Invalid state transition: {$from} → {$to}");
+            throw new InvalidArgumentException("Invalid state transition: $from->value → $to->value");
         }
     }
 
     /**
      * Checks if the given state is a terminal state.
-     *
-     * @param  TState  $state
      */
-    public function isTerminal($state): bool
+    public function isTerminal(BackedEnum&HasNode $state): bool
     {
         return $this->neighbors($state) === [];
     }
