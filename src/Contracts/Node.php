@@ -9,6 +9,8 @@ use Taecontrol\NodeGraph\Decision;
  * Interface Node
  *
  * @template TContext of Context
+ * @template TDecision of Decision
+ * @package Taecontrol\NodeGraph\Contracts
  */
 interface Node
 {
@@ -16,6 +18,7 @@ interface Node
      * Handle the given data.
      *
      * @param  TContext  $data
+     * @return TDecision
      */
-    public function handle($data): Decision;
+    public function handle($data);
 }
