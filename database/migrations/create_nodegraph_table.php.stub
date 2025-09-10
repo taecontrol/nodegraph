@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('threads', function (Blueprint $table) {
-            $table->ulid()->primary();
+            $table->ulid('id')->primary();
             $table->ulidMorphs('threadable');
 
             $table->string('current_state')->nullable();
@@ -23,7 +23,7 @@ return new class extends Migration
         });
 
         Schema::create('checkpoints', function (Blueprint $table) {
-            $table->ulid()->primary();
+            $table->ulid('id')->primary();
             $table->ulid('thread_id')->constrained()->cascadeOnDelete();
             $table->string('state');
             $table->json('metadata')->nullable();
