@@ -7,11 +7,14 @@ use InvalidArgumentException;
 
 /**
  * Interface Graph
- *
- * @template TState
  */
 interface Graph
 {
+    /**
+     * Defines the structure of the graph.
+     */
+    public function define(): void;
+
     /**
      * Returns the initial state of the graph.
      */

@@ -12,9 +12,24 @@ use Taecontrol\NodeGraph\Contracts\HasNode;
 abstract class Graph implements Contracts\Graph
 {
     /**
-     * @var array <int|string, list<TState>>
+     * @var array <int|string, list<BackedEnum&HasNode>>
      */
     private array $nodes = [];
+
+    public function __construct()
+    {
+        $this->define();
+    }
+
+    /**
+     * Defines the structure of the graph.
+     */
+    abstract public function define(): void;
+
+    /**
+     * Returns the initial state of the graph.
+     */
+    abstract public function initialState(): BackedEnum&HasNode;
 
     /**
      * Adds a new State to the graph.
