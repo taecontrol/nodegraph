@@ -59,7 +59,7 @@ abstract class Graph implements Contracts\Graph
         $currentState = $thread->current_state;
 
         /** @var Node $node */
-        $node = app($this->initialState()->node());
+        $node = app($currentState->node());
 
         $decision = $node->execute($context);
 
