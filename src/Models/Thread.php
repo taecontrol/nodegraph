@@ -34,4 +34,13 @@ class Thread extends Model
     {
         return $this->hasMany(Checkpoint::class);
     }
+
+    protected function getCastType($key)
+    {
+        if ($key === 'state' && config('node-graph.thread_state_enum')) {
+            return config('node-graph.thread_state_enum');
+        }
+
+        return parent::getCastType($key);
+    }
 }
