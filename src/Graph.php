@@ -5,14 +5,22 @@ namespace Taecontrol\NodeGraph;
 use BackedEnum;
 use InvalidArgumentException;
 use Taecontrol\NodeGraph\Contracts\HasNode;
+use Taecontrol\NodeGraph\Models\Thread;
 
 /**
  * Class Graph
+ *
+ * @template TState of (BackedEnum&HasNode)
+ * @template TContext of Context
+ * @template TDecision of Decision
+ * @template TThread of Thread
+ *
+ * @implements Contracts\Graph<TState>
  */
 abstract class Graph implements Contracts\Graph
 {
     /**
-     * @var array <int|string, list<BackedEnum&HasNode>>
+     * @var array <int|string, list<TState>>
      */
     private array $nodes = [];
 
@@ -28,10 +36,17 @@ abstract class Graph implements Contracts\Graph
 
     /**
      * Returns the initial state of the graph.
+     *
+     * @return TState
      */
-    abstract public function initialState(): BackedEnum&HasNode;
+    abstract public function initialState();
 
-    public function run(Context $context): void
+    /**
+     * Runs the graph starting from the initial state.
+     *
+     * @param  TContext  $context
+     */
+    public function run($context): void
     {
         $thread = $context->thread();
 
@@ -40,16 +55,27 @@ abstract class Graph implements Contracts\Graph
             $thread->save();
         }
 
+        /** @var TState $currentState */
+        $currentState = $thread->current_state;
+
         /** @var Node $node */
         $node = app($this->initialState()->node());
 
-        $node->execute($context);
+        $decision = $node->execute($context);
+
+        $this->assert($currentState, $decision->nextState());
+
+        $thread = $this->updateThreadState($context, $decision->nextState());
+        $this->createCheckpoint($thread, $decision);
+        $this->dispatchEvents($decision);
     }
 
     /**
      * Adds a new State to the graph.
+     *
+     * @param  TState  $state
      */
-    public function addState(BackedEnum&HasNode $state): void
+    public function addState($state): void
     {
         if (! array_key_exists($state->value, $this->nodes)) {
             $this->nodes[$state->value] = [];
@@ -58,8 +84,11 @@ abstract class Graph implements Contracts\Graph
 
     /**
      * Adds a directed edge from one state to another.
+     *
+     * @param  TState  $from
+     * @param  TState  $to
      */
-    public function addEdge(BackedEnum&HasNode $from, BackedEnum&HasNode $to): void
+    public function addEdge($from, $to): void
     {
         $this->addState($from);
         $this->addState($to);
@@ -72,17 +101,21 @@ abstract class Graph implements Contracts\Graph
     /**
      * Returns the neighboring states of a given state.
      *
-     * @return array<int, BackedEnum&HasNode>
+     * @param  TState  $state
+     * @return array<int, TState>
      */
-    public function neighbors(BackedEnum&HasNode $state): array
+    public function neighbors($state): array
     {
         return $this->nodes[$state->value] ?? [];
     }
 
     /**
      * Checks if a transition from one state to another is possible.
+     *
+     * @param  TState  $from
+     * @param  TState  $to
      */
-    public function canTransition(BackedEnum&HasNode $from, BackedEnum&HasNode $to): bool
+    public function canTransition($from, $to): bool
     {
         return in_array($to, $this->neighbors($from), true);
     }
@@ -90,9 +123,12 @@ abstract class Graph implements Contracts\Graph
     /**
      * Asserts that a transition from one state to another is valid.
      *
+     * @param  TState  $from
+     * @param  TState  $to
+     *
      * @throws InvalidArgumentException if the transition is not allowed
      */
-    public function assert(BackedEnum&HasNode $from, BackedEnum&HasNode $to): void
+    public function assert($from, $to): void
     {
         if (! $this->canTransition($from, $to)) {
             throw new InvalidArgumentException("Invalid state transition: $from->value → $to->value");
@@ -101,9 +137,52 @@ abstract class Graph implements Contracts\Graph
 
     /**
      * Checks if the given state is a terminal state.
+     *
+     * @param  TState  $state
      */
-    public function isTerminal(BackedEnum&HasNode $state): bool
+    public function isTerminal($state): bool
     {
         return $this->neighbors($state) === [];
+    }
+
+    /**
+     * Updates the current state of the thread in the context.
+     *
+     * @param  TContext  $context
+     * @param  TState  $newState
+     */
+    protected function updateThreadState($context, $newState): Thread
+    {
+        $thread = $context->thread();
+        $thread->current_state = $newState->value;
+        $thread->save();
+
+        return $thread;
+    }
+
+    /**
+     * Creates a checkpoint for the thread based on the decision.
+     *
+     * @param  TThread  $thread
+     * @param  TDecision  $decision
+     */
+    protected function createCheckpoint($thread, $decision): void
+    {
+        $thread->checkpoints()->create([
+            'state' => $decision->nextState()->value,
+            'metadata' => $decision->metadata(),
+        ]);
+    }
+
+    /**
+     * Dispatches events associated with the decision.
+     *
+     * @param  TDecision  $decision
+     */
+    protected function dispatchEvents($decision): void
+    {
+        foreach ($decision->events() as $event) {
+            event($event);
+        }
     }
 }

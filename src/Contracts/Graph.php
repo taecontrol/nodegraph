@@ -7,6 +7,8 @@ use InvalidArgumentException;
 
 /**
  * Interface Graph
+ *
+ * @template TState of (BackedEnum&HasNode)
  */
 interface Graph
 {
@@ -17,40 +19,56 @@ interface Graph
 
     /**
      * Returns the initial state of the graph.
+     *
+     * @return TState
      */
-    public function initialState(): BackedEnum&HasNode;
+    public function initialState();
 
     /**
      * Adds a new State to the graph.
+     *
+     * @param  TState  $state
      */
-    public function addState(BackedEnum&HasNode $state): void;
+    public function addState($state): void;
 
     /**
      * Adds a directed edge from one state to another.
+     *
+     * @param  TState  $from
+     * @param  TState  $to
      */
-    public function addEdge(BackedEnum&HasNode $from, BackedEnum&HasNode $to): void;
+    public function addEdge($from, $to): void;
 
     /**
      * Returns the neighboring states of a given state.
      *
-     * @return array<int, BackedEnum&HasNode>
+     * @param  TState  $state
+     * @return array<int, TState>
      */
-    public function neighbors(BackedEnum&HasNode $state): array;
+    public function neighbors($state): array;
 
     /**
      * Checks if a transition from one state to another is possible.
+     *
+     * @param  TState  $from
+     * @param  TState  $to
      */
-    public function canTransition(BackedEnum&HasNode $from, BackedEnum&HasNode $to): bool;
+    public function canTransition($from, $to): bool;
 
     /**
      * Asserts that a transition from one state to another is possible.
      *
+     * @param  TState  $from
+     * @param  TState  $to
+     *
      * @throws InvalidArgumentException if the transition is not allowed
      */
-    public function assert(BackedEnum&HasNode $from, BackedEnum&HasNode $to): void;
+    public function assert($from, $to): void;
 
     /**
      * Checks if the given state is a terminal state.
+     *
+     * @param  TState  $state
      */
-    public function isTerminal(BackedEnum&HasNode $state): bool;
+    public function isTerminal($state): bool;
 }
