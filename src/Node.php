@@ -5,14 +5,18 @@ namespace Taecontrol\NodeGraph;
 /**
  * Class Node
  *
- * @implements Contracts\Node<Context, Decision>
+ * @template TContext of Context
+ *
+ * @implements Contracts\Node<TContext, Decision>
  */
 abstract class Node implements Contracts\Node
 {
     /**
      * Execute the node with the given data.
+     *
+     * @param  TContext  $data
      */
-    public function execute(Context $data): Decision
+    public function execute($data): Decision
     {
         $startTime = microtime(true);
 
@@ -29,6 +33,8 @@ abstract class Node implements Contracts\Node
 
     /**
      * Handle the given data.
+     *
+     * @param  TContext  $data
      */
-    abstract public function handle(Context $data): Decision;
+    abstract public function handle($data): Decision;
 }
