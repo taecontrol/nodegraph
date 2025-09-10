@@ -6,14 +6,34 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
-        Schema::create('nodegraph_table', function (Blueprint $table) {
-            $table->id();
+        Schema::create('threads', function (Blueprint $table) {
+            $table->ulid()->primary();
+            $table->ulidMorphs('threadable');
+            $table->json('metadata')->nullable();
 
-            // add fields
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('finished_at')->nullable();
 
             $table->timestamps();
+            $table->softDeletes();
         });
+
+        Schema::create('checkpoints', function (Blueprint $table) {
+            $table->ulid()->primary();
+            $table->ulid('thread_id')->constrained()->cascadeOnDelete();
+            $table->string('state');
+            $table->json('metadata')->nullable();
+
+            $table->timestamps();
+            $table->softDeletes();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('checkpoints');
+        Schema::dropIfExists('threads');
     }
 };

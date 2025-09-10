@@ -3,11 +3,11 @@
 namespace Taecontrol\NodeGraph\Database\Factories;
 
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Taecontrol\NodeGraph\Models\Thread;
 
-/*
-class ModelFactory extends Factory
+class ThreadFactory extends Factory
 {
-    protected $model = YourModel::class;
+    protected $model = Thread::class;
 
     public function definition()
     {
@@ -16,4 +16,3 @@ class ModelFactory extends Factory
         ];
     }
 }
-*/
