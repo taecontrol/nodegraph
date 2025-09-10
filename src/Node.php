@@ -6,8 +6,9 @@ namespace Taecontrol\NodeGraph;
  * Class Node
  *
  * @template TContext of Context
+ * @template TDecision of Decision
  *
- * @implements Contracts\Node<TContext, Decision>
+ * @implements Contracts\Node<TContext, TDecision>
  */
 abstract class Node implements Contracts\Node
 {
@@ -15,8 +16,9 @@ abstract class Node implements Contracts\Node
      * Execute the node with the given data.
      *
      * @param  TContext  $data
+     * @return TDecision
      */
-    public function execute($data): Decision
+    public function execute($data)
     {
         $startTime = microtime(true);
 

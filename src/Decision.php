@@ -5,13 +5,23 @@ namespace Taecontrol\NodeGraph;
 use BackedEnum;
 use Taecontrol\NodeGraph\Contracts\HasNode;
 
+/**
+ * Class Decision
+ *
+ * @template TState of (BackedEnum&HasNode)
+ * @template TEvent of Event
+ *
+ * @implements Contracts\HasMetadata
+ * @package Taecontrol\NodeGraph
+ */
 abstract class Decision implements Contracts\HasMetadata
 {
     public function __construct(
-        protected BackedEnum&HasNode $nextState,
+        /** @var TState */
+        protected $nextState,
         /** @var array<string, mixed> */
         protected array $metadata = [],
-        /** @var array<int, Event> */
+        /** @var array<int, TEvent> */
         protected $events = []
     ) {}
 
@@ -46,7 +56,7 @@ abstract class Decision implements Contracts\HasMetadata
     /**
      * Get the list of event class associated with the decision.
      *
-     * @return array<int, Event>
+     * @return array<int, TEvent>
      */
     public function events(): array
     {
@@ -56,7 +66,7 @@ abstract class Decision implements Contracts\HasMetadata
     /**
      * Set the list of event class associated with the decision.
      *
-     * @param  array<int, Event>  $events
+     * @param  array<int, TEvent>  $events
      */
     public function setEvents(array $events): void
     {
@@ -65,16 +75,18 @@ abstract class Decision implements Contracts\HasMetadata
 
     /**
      * Add an event class to the decision.
+     * * @param  TEvent  $event
      */
-    public function addEvent(Event $event): void
+    public function addEvent($event): void
     {
         $this->events[] = $event;
     }
 
     /**
      * Get the next state associated with the decision.
+     * * @return TState
      */
-    public function nextState(): BackedEnum&HasNode
+    public function nextState()
     {
         return $this->nextState;
     }
