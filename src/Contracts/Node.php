@@ -5,15 +5,16 @@ namespace Taecontrol\NodeGraph\Contracts;
 /**
  * Interface Node
  *
- * @template T
+ * @template TData
+ * @package Taecontrol\NodeGraph\Contracts
  */
 interface Node
 {
     /**
      * Handle the given data.
      *
-     * @param  T  $data
-     * @return T
+     * @param TData $data
+     * @return TData
      */
     public function handle($data);
 }
