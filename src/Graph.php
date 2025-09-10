@@ -5,6 +5,7 @@ namespace Taecontrol\NodeGraph;
 use BackedEnum;
 use InvalidArgumentException;
 use Taecontrol\NodeGraph\Contracts\HasNode;
+use Taecontrol\NodeGraph\Models\Thread;
 
 /**
  * Class Graph
@@ -30,6 +31,19 @@ abstract class Graph implements Contracts\Graph
      * Returns the initial state of the graph.
      */
     abstract public function initialState(): BackedEnum&HasNode;
+
+    public function run(Thread $thread, Context $context): void
+    {
+        if ($thread->current_state === null) {
+            $thread->current_state = $this->initialState()->value;
+            $thread->save();
+        }
+
+        /** @var Node $node */
+        $node = app($this->initialState()->node());
+
+        $node->execute($context);
+    }
 
     /**
      * Adds a new State to the graph.

@@ -2,13 +2,15 @@
 
 namespace Taecontrol\NodeGraph\Contracts;
 
+use Taecontrol\NodeGraph\Models\Thread;
+
 /**
  * Interface HasNode
  */
-interface HasState
+interface HasThread
 {
     /**
      * Get the node associated with the state.
      */
-    public function state(): self;
+    public function thread(): Thread;
 }

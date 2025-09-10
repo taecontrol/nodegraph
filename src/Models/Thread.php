@@ -17,6 +17,7 @@ class Thread extends Model
 
     /**
      * Get the parent threadable model (morph to).
+     *
      * @return MorphTo<Thread, Model>
      */
     public function threadable(): MorphTo
@@ -26,6 +27,7 @@ class Thread extends Model
 
     /**
      * Get the checkpoints for the thread.
+     *
      * @return HasMany<Checkpoint>
      */
     public function checkpoints(): HasMany

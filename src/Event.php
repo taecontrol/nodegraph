@@ -2,7 +2,4 @@
 
 namespace Taecontrol\NodeGraph;
 
-abstract class Event
-{
-
-}
+abstract class Event {}

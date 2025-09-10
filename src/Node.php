@@ -2,23 +2,17 @@
 
 namespace Taecontrol\NodeGraph;
 
-use Taecontrol\NodeGraph\Contracts\HasState;
-
 /**
  * Class Node
  *
- * @template TContext of HasState
- *
- * @implements Contracts\Node<TContext, Decision>
+ * @implements Contracts\Node<Context, Decision>
  */
 abstract class Node implements Contracts\Node
 {
     /**
      * Execute the node with the given data.
-     *
-     * @param TContext $data
      */
-    public function execute(HasState $data): Decision
+    public function execute(Context $data): Decision
     {
         $startTime = microtime(true);
 
@@ -27,7 +21,7 @@ abstract class Node implements Contracts\Node
         $endTime = microtime(true);
         $executionTime = $endTime - $startTime;
 
-        $result->addMetadata('state', $data->state());
+        $result->addMetadata('state', $data->thread()->state);
         $result->addMetadata('execution_time', $executionTime);
 
         return $result;
@@ -35,8 +29,6 @@ abstract class Node implements Contracts\Node
 
     /**
      * Handle the given data.
-     *
-     * @param  TContext  $data
      */
-    abstract public function handle($data): Decision;
+    abstract public function handle(Context $data): Decision;
 }

@@ -32,6 +32,7 @@ interface Graph
 
     /**
      * Returns the neighboring states of a given state.
+     *
      * @return array<int, BackedEnum&HasNode>
      */
     public function neighbors(BackedEnum&HasNode $state): array;
@@ -43,6 +44,7 @@ interface Graph
 
     /**
      * Asserts that a transition from one state to another is possible.
+     *
      * @throws InvalidArgumentException if the transition is not allowed
      */
     public function assert(BackedEnum&HasNode $from, BackedEnum&HasNode $to): void;
