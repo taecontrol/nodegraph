@@ -154,8 +154,11 @@ abstract class Graph implements Contracts\Graph
     protected function updateThreadState($context, $newState): Thread
     {
         $thread = $context->thread();
-        $thread->current_state = $newState->value;
-        $thread->save();
+
+        if ($newState !== null) {
+            $thread->current_state = $newState->value;
+            $thread->save();
+        }
 
         return $thread;
     }

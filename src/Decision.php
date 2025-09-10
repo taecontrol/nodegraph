@@ -17,8 +17,8 @@ use Taecontrol\NodeGraph\Contracts\HasNode;
 abstract class Decision implements Contracts\HasMetadata
 {
     public function __construct(
-        /** @var TState */
-        protected $nextState,
+        /** @var TState|null */
+        protected $nextState = null,
         /** @var array<string, mixed> */
         protected array $metadata = [],
         /** @var array<int, TEvent> */
