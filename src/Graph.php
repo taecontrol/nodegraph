@@ -174,7 +174,7 @@ abstract class Graph implements Contracts\Graph
     protected function createCheckpoint($thread, $decision): void
     {
         $thread->checkpoints()->create([
-            'state' => $decision->nextState(),
+            'state' => $decision->nextState() ?? $thread->current_state,
             'metadata' => $decision->metadata(),
         ]);
     }
