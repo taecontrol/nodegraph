@@ -1,4 +1,4 @@
-# Build agentic apps
+# Build agentic apps with NodeGraph
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/taecontrol/nodegraph.svg?style=flat-square)](https://packagist.org/packages/taecontrol/nodegraph)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/taecontrol/nodegraph/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/taecontrol/nodegraph/actions?query=workflow%3Arun-tests+branch%3Amain)
