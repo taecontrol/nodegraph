@@ -63,7 +63,9 @@ abstract class Graph implements Contracts\Graph
 
         $decision = $node->execute($context);
 
-        $this->assert($currentState, $decision->nextState());
+        if (! $this->isTerminal($currentState) && $decision->nextState() !== null) {
+            $this->assert($currentState, $decision->nextState());
+        }
 
         $thread = $this->updateThreadState($context, $decision->nextState());
         $this->createCheckpoint($thread, $decision);
