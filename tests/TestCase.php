@@ -5,6 +5,7 @@ namespace Taecontrol\NodeGraph\Tests;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Taecontrol\NodeGraph\NodeGraphServiceProvider;
+use Taecontrol\NodeGraph\Tests\Fixtures\SampleState;
 
 class TestCase extends Orchestra
 {
@@ -27,11 +28,11 @@ class TestCase extends Orchestra
     public function getEnvironmentSetUp($app)
     {
         config()->set('database.default', 'testing');
+        // Use the test enum for state casting during tests
+        config()->set('nodegraph.state_enum', SampleState::class);
 
-        /*
-         foreach (\Illuminate\Support\Facades\File::allFiles(__DIR__ . '/database/migrations') as $migration) {
-            (include $migration->getRealPath())->up();
-         }
-         */
+        // Run package migration stub directly
+        $migration = include __DIR__.'/../database/migrations/create_nodegraph_table.php.stub';
+        $migration->up();
     }
 }

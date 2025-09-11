@@ -2,11 +2,17 @@
 
 namespace Taecontrol\NodeGraph\Models;
 
+use BackedEnum;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Taecontrol\NodeGraph\Contracts\HasNode;
 
+/**
+ * @property (BackedEnum&HasNode)|null $state
+ * @property array<string, mixed>|null $metadata
+ */
 class Checkpoint extends Model
 {
     use HasUlids;
