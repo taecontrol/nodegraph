@@ -165,7 +165,9 @@ abstract class Graph implements Contracts\Graph
      */
     public function updateThreadMetadata($thread, array $metadata): void
     {
-        $thread->metadata = array_merge($thread->metadata ?? [], $metadata);
+        $thread->metadata = array_merge($thread->metadata ?? [], [
+            $thread->current_state->value => $metadata
+        ]);
         $thread->save();
     }
 
