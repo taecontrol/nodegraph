@@ -52,6 +52,7 @@ abstract class Graph implements Contracts\Graph
 
         if ($thread->current_state === null) {
             $thread->current_state = $this->initialState();
+            $thread->started_at = now();
             $thread->save();
         }
 
@@ -181,7 +182,12 @@ abstract class Graph implements Contracts\Graph
     {
         $thread = $context->thread();
 
-        if ($newState !== null) {
+        if ($this->isTerminal($thread->current_state)) {
+            $thread->finished_at = now();
+            $thread->save();
+        }
+
+        if ($newState !== null || $thread->current_state !== $newState) {
             $thread->current_state = $newState;
             $thread->save();
         }
