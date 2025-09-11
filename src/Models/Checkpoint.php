@@ -17,7 +17,7 @@ class Checkpoint extends Model
     /**
      * Get the parent thread model.
      *
-     * @return BelongsTo<Thread, self>
+     * @return BelongsTo<Thread, $this>
      */
     public function thread(): BelongsTo
     {

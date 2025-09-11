@@ -10,9 +10,6 @@ use Taecontrol\NodeGraph\Contracts\HasNode;
  *
  * @template TState of (BackedEnum&HasNode)
  * @template TEvent of Event
- *
- * @implements Contracts\HasMetadata
- * @package Taecontrol\NodeGraph
  */
 abstract class Decision implements Contracts\HasMetadata
 {
@@ -75,6 +72,7 @@ abstract class Decision implements Contracts\HasMetadata
 
     /**
      * Add an event class to the decision.
+     *
      * * @param  TEvent  $event
      */
     public function addEvent($event): void
@@ -84,6 +82,7 @@ abstract class Decision implements Contracts\HasMetadata
 
     /**
      * Get the next state associated with the decision.
+     *
      * * @return TState
      */
     public function nextState()

@@ -167,7 +167,7 @@ abstract class Graph implements Contracts\Graph
     public function updateThreadMetadata($thread, array $metadata): void
     {
         $thread->metadata = array_merge($thread->metadata ?? [], [
-            $thread->current_state->value => $metadata
+            $thread->current_state->value => $metadata,
         ]);
         $thread->save();
     }
@@ -176,18 +176,22 @@ abstract class Graph implements Contracts\Graph
      * Updates the current state of the thread in the context.
      *
      * @param  TContext  $context
-     * @param  TState  $newState
+     * @param  TState|null  $newState
      */
     protected function updateThreadState($context, $newState): Thread
     {
         $thread = $context->thread();
 
-        if ($this->isTerminal($thread->current_state)) {
-            $thread->finished_at = now();
-            $thread->save();
+        if ($thread->current_state !== null) {
+            /** @var TState $current */
+            $current = $thread->current_state;
+            if ($this->isTerminal($current)) {
+                $thread->finished_at = now();
+                $thread->save();
+            }
         }
 
-        if ($newState !== null || $thread->current_state !== $newState) {
+        if ($newState !== null && $thread->current_state !== $newState) {
             $thread->current_state = $newState;
             $thread->save();
         }
@@ -205,7 +209,7 @@ abstract class Graph implements Contracts\Graph
     {
         $thread->checkpoints()->create([
             'state' => $decision->nextState() ?? $thread->current_state,
-            'metadata' => array_merge($thread->metadata, $decision->metadata()),
+            'metadata' => array_merge($thread->metadata ?? [], $decision->metadata()),
         ]);
     }
 

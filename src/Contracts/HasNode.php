@@ -4,6 +4,7 @@ namespace Taecontrol\NodeGraph\Contracts;
 
 /**
  * Interface HasNode
+ *
  * @template TNode of Node
  */
 interface HasNode

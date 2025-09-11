@@ -10,7 +10,6 @@ use Taecontrol\NodeGraph\Decision;
  *
  * @template TContext of Context
  * @template TDecision of Decision
- * @package Taecontrol\NodeGraph\Contracts
  */
 interface Node
 {
