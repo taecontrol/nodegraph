@@ -58,18 +58,27 @@ abstract class Graph implements Contracts\Graph
         /** @var TState $currentState */
         $currentState = $thread->current_state;
 
+        if ($this->isTerminal($currentState) && $this->canTransition($currentState, $currentState)) {
+            return;
+        }
+
         /** @var Node $node */
         $node = app($currentState->node());
 
         $decision = $node->execute($context);
 
-        if (! $this->isTerminal($currentState) && $decision->nextState() !== null) {
-            $this->assert($currentState, $decision->nextState());
-        }
-
-        $thread = $this->updateThreadState($context, $decision->nextState());
         $this->createCheckpoint($thread, $decision);
         $this->dispatchEvents($decision);
+
+        if (! $this->isTerminal($currentState) && $decision->nextState() !== null) {
+            $canTransition = $this->canTransition($currentState, $decision->nextState());
+        } else {
+            $canTransition = $this->canTransition($currentState, $currentState);
+        }
+
+        if ($canTransition) {
+            $this->updateThreadState($context, $decision->nextState());
+        }
     }
 
     /**
