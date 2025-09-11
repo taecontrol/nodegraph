@@ -67,6 +67,7 @@ abstract class Graph implements Contracts\Graph
 
         $decision = $node->execute($context);
 
+        $this->updateThreadMetadata($thread, $decision->metadata());
         $this->createCheckpoint($thread, $decision);
         $this->dispatchEvents($decision);
 
@@ -157,6 +158,18 @@ abstract class Graph implements Contracts\Graph
     }
 
     /**
+     * Updates the metadata of the thread.
+     *
+     * @param  TThread  $thread
+     * @param  array<string, mixed>  $metadata
+     */
+    public function updateThreadMetadata($thread, array $metadata): void
+    {
+        $thread->metadata = array_merge($thread->metadata ?? [], $metadata);
+        $thread->save();
+    }
+
+    /**
      * Updates the current state of the thread in the context.
      *
      * @param  TContext  $context
@@ -184,7 +197,7 @@ abstract class Graph implements Contracts\Graph
     {
         $thread->checkpoints()->create([
             'state' => $decision->nextState() ?? $thread->current_state,
-            'metadata' => $decision->metadata(),
+            'metadata' => array_merge($thread->metadata, $decision->metadata()),
         ]);
     }
 
