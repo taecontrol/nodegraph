@@ -14,10 +14,6 @@ class Checkpoint extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'metadata' => 'array',
-    ];
-
     /**
      * Get the parent thread model.
      *
@@ -28,12 +24,11 @@ class Checkpoint extends Model
         return $this->belongsTo(Thread::class);
     }
 
-    protected function getCastType($key)
+    protected function casts(): array
     {
-        if ($key === 'state' && config('nodegraph.state_enum')) {
-            return config('nodegraph.state_enum');
-        }
-
-        return parent::getCastType($key);
+        return [
+            'state' => config('nodegraph.state_enum'),
+            'metadata' => 'array',
+        ];
     }
 }

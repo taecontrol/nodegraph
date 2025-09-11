@@ -15,10 +15,6 @@ class Thread extends Model
 
     protected $guarded = [];
 
-    protected $casts = [
-        'metadata' => 'array',
-    ];
-
     /**
      * Get the parent threadable model (morph to).
      *
@@ -39,12 +35,11 @@ class Thread extends Model
         return $this->hasMany(Checkpoint::class);
     }
 
-    protected function getCastType($key)
+    protected function casts(): array
     {
-        if ($key === 'current_state' && config('nodegraph.state_enum')) {
-            return config('nodegraph.state_enum');
-        }
-
-        return parent::getCastType($key);
+        return [
+            'current_state' => config('nodegraph.state_enum'),
+            'metadata' => 'array',
+        ];
     }
 }
