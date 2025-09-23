@@ -1,6 +1,6 @@
 <?php
 
-use Illuminate\Support\Str;
+use Taecontrol\NodeGraph\Database\Factories\ThreadFactory;
 use Taecontrol\NodeGraph\Models\Thread;
 use Taecontrol\NodeGraph\Node;
 use Taecontrol\NodeGraph\Tests\Fixtures\SampleState;
@@ -8,17 +8,18 @@ use Taecontrol\NodeGraph\Tests\Fixtures\SimpleDecision;
 use Taecontrol\NodeGraph\Tests\Fixtures\StartNode;
 use Taecontrol\NodeGraph\Tests\Fixtures\TestContext;
 
-function makeThreadForNodeTest(): Thread
-{
-    return Thread::create([
-        'threadable_type' => 'test',
-        'threadable_id' => (string) Str::ulid(),
-        'metadata' => [],
+beforeEach(function () {
+    config()->set('nodegraph.graphs', [
+        [
+            'name' => 'default',
+            'state_enum' => SampleState::class,
+        ],
     ]);
-}
+});
 
-it('adds state and execution_time metadata when executing a node', function () {
-    $thread = makeThreadForNodeTest();
+it('adds state and execution_time metadata when executing a node', closure: function () {
+    /** @var Thread $thread */
+    $thread = ThreadFactory::new()->create();
     $thread->current_state = SampleState::Start;
     $thread->save();
 
@@ -43,7 +44,7 @@ it('adds state and execution_time metadata when executing a node', function () {
 });
 
 it('returns the same Decision instance produced by handle (no cloning) and augments its metadata', function () {
-    $thread = makeThreadForNodeTest();
+    $thread = ThreadFactory::new()->create();
     $thread->current_state = SampleState::Middle;
     $thread->save();
 
@@ -74,7 +75,7 @@ it('returns the same Decision instance produced by handle (no cloning) and augme
 });
 
 it('handles null current_state by setting state metadata to null', function () {
-    $thread = makeThreadForNodeTest(); // current_state stays null
+    $thread = ThreadFactory::new()->create(); // current_state stays null
 
     $context = new TestContext($thread);
 

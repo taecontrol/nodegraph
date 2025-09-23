@@ -12,7 +12,10 @@ class ThreadFactory extends Factory
     public function definition()
     {
         return [
-
+            'threadable_type' => 'test',
+            'threadable_id' => fake()->uuid(),
+            'graph_name' => 'default',
+            'metadata' => [],
         ];
     }
 }

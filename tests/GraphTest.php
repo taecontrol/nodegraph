@@ -1,21 +1,21 @@
 <?php
 
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\Str;
+use Taecontrol\NodeGraph\Database\Factories\ThreadFactory;
 use Taecontrol\NodeGraph\Models\Thread;
 use Taecontrol\NodeGraph\Tests\Fixtures\SampleState;
 use Taecontrol\NodeGraph\Tests\Fixtures\TestContext;
 use Taecontrol\NodeGraph\Tests\Fixtures\TestEvent;
 use Taecontrol\NodeGraph\Tests\Fixtures\TestGraph;
 
-function makeThread(): Thread
-{
-    return Thread::create([
-        'threadable_type' => 'test',
-        'threadable_id' => (string) Str::ulid(),
-        'metadata' => [],
+beforeEach(function () {
+    config()->set('nodegraph.graphs', [
+        [
+            'name' => 'default',
+            'state_enum' => SampleState::class,
+        ],
     ]);
-}
+});
 
 it('defines neighbors and terminal states correctly', function () {
     $graph = new TestGraph;
@@ -41,7 +41,8 @@ it('asserts invalid transitions', function () {
 
 it('runs and advances thread state, creating metadata and checkpoints', function () {
     $graph = new TestGraph;
-    $thread = makeThread();
+    /** @var Thread $thread */
+    $thread = ThreadFactory::new()->create();
     $context = new TestContext($thread);
 
     Event::fake();

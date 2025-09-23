@@ -188,6 +188,7 @@ use Taecontrol\NodeGraph\Models\Thread;
 $thread = Thread::create([
     'threadable_type' => \App\Models\Order::class, // anything morphable
     'threadable_id' => (string) \Illuminate\Support\Str::ulid(),
+    'graph_name' => 'order_graph',
     'metadata' => [],
 ]);
 
