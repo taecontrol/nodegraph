@@ -2,6 +2,12 @@
 
 All notable changes to `nodegraph` will be documented in this file.
 
+## 0.2.0 - 2025-09-24
+
+**Full Changelog**: https://github.com/taecontrol/nodegraph/compare/0.1.0...0.1.1
+
+- Fix some bugs when resolving state in the Checkpoint model
+
 ## 0.1.0 - 2025-09-23
 
 **Full Changelog**: https://github.com/taecontrol/nodegraph/compare/0.0.1...0.1.0
