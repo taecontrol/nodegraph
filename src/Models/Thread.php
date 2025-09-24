@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
 use Taecontrol\NodeGraph\Contracts\HasNode;
 
 /**
+ * @property string $graph_name
  * @property (BackedEnum&HasNode)|null $current_state
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $started_at
@@ -57,7 +58,6 @@ class Thread extends Model
             get: function ($value, $attributes) {
                 /** @var array<string, string> $graphConfig */
                 $graphConfig = collect(config('nodegraph.graphs'))
-                    ->dump()
                     ->filter(fn ($graph) => $graph['name'] === $attributes['graph_name'])
                     ->first();
 
