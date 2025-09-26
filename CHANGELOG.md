@@ -2,6 +2,12 @@
 
 All notable changes to `nodegraph` will be documented in this file.
 
+## 0.2.1 - 2025-09-26
+
+**Full Changelog**: https://github.com/taecontrol/nodegraph/compare/0.2.0...0.2.1
+
+- Update Decision class to use mixed type for events and remove unused TEvent template
+
 ## 0.2.0 - 2025-09-24
 
 **Full Changelog**: https://github.com/taecontrol/nodegraph/compare/0.1.0...0.1.1
