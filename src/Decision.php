@@ -9,7 +9,6 @@ use Taecontrol\NodeGraph\Contracts\HasNode;
  * Class Decision
  *
  * @template TState of (BackedEnum&HasNode)
- * @template TEvent of Event
  */
 abstract class Decision implements Contracts\HasMetadata
 {
@@ -18,7 +17,7 @@ abstract class Decision implements Contracts\HasMetadata
         protected $nextState = null,
         /** @var array<string, mixed> */
         protected array $metadata = [],
-        /** @var array<int, TEvent> */
+        /** @var array<int, mixed> */
         protected $events = []
     ) {}
 
@@ -53,7 +52,7 @@ abstract class Decision implements Contracts\HasMetadata
     /**
      * Get the list of event class associated with the decision.
      *
-     * @return array<int, TEvent>
+     * @return array<int, mixed>
      */
     public function events(): array
     {
@@ -63,7 +62,7 @@ abstract class Decision implements Contracts\HasMetadata
     /**
      * Set the list of event class associated with the decision.
      *
-     * @param  array<int, TEvent>  $events
+     * @param  array<int, mixed>  $events
      */
     public function setEvents(array $events): void
     {
@@ -73,7 +72,7 @@ abstract class Decision implements Contracts\HasMetadata
     /**
      * Add an event class to the decision.
      *
-     * * @param  TEvent  $event
+     * * @param  mixed  $event
      */
     public function addEvent($event): void
     {
