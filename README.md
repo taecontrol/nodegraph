@@ -74,12 +74,13 @@ return [
 ## How it runs
 `Graph::run($context)` will:
 1. Initialize the thread's `current_state` to the graph's `initialState()` if null, setting `started_at`.
-2. Resolve the Node for the current state and execute it.
-3. The Node's Decision metadata is augmented with `state` and `execution_time` (seconds, float).
-4. Thread metadata is merged under the key of the current state's enum value.
-5. A checkpoint is created with merged metadata; Decision events are dispatched.
-6. If a transition is allowed (`canTransition(current, decision->nextState())`), thread state advances.
-7. `finished_at` is currently only set if a terminal state is re-run in a configuration where the terminal state has a self-transition (explicit self-edge) causing `updateThreadState` to execute while already terminal. With the common pattern (no outgoing edges), `finished_at` will remain `null` unless you add such a self-edge or customize behavior.
+2. If the current state is terminal (no outgoing edges), return immediately — no node is executed.
+3. Resolve the Node for the current state and execute it.
+4. Validate the transition (`assertValidTransition`) before any side effects. Throws `InvalidStateTransition` if the node returns an undeclared next state.
+5. The Node's Decision metadata is augmented with `state` and `execution_time` (seconds, float).
+6. Thread metadata is merged under the key of the current state's enum value.
+7. A checkpoint is created with merged metadata; Decision events are dispatched.
+8. Thread state advances. If the new state is terminal, `finished_at` is set and a `GraphFinished` event is dispatched.
 
 ## Quickstart (single graph)
 
@@ -148,16 +149,9 @@ class ChargeNode extends Node
     }
 }
 
-class DoneNode extends Node
-{
-    public function handle($context): SimpleDecision
-    {
-        $d = new SimpleDecision(null); // remain in terminal state
-        $d->addMetadata('from', 'done');
-        $d->addEvent(new OrderEvent('done'));
-        return $d;
-    }
-}
+// DoneNode is never executed — terminal states are no-ops.
+// The enum still maps Done to a node class (PHP requires exhaustive match),
+// but Graph::run() returns early before resolving it.
 ```
 
 4) Define your Graph:
@@ -215,8 +209,8 @@ $context = new \App\Contexts\OrderContext($thread);
 $graph = app(\App\Graphs\OrderGraph::class); // graph_name does NOT auto-resolve to a class
 
 $graph->run($context); // Start -> Charge
-$graph->run($context); // Charge -> Done
-$graph->run($context); // Done terminal; finished_at remains null with default pattern
+$graph->run($context); // Charge -> Done (finished_at set, GraphFinished dispatched)
+$graph->run($context); // Done is terminal — no-op
 ```
 
 Observability:
@@ -307,7 +301,7 @@ app(\App\Graphs\ShipmentGraph::class)->run(new ShipmentContext($shipmentThread))
 - `graph_name` does NOT auto-resolve a Graph class—you must choose the appropriate class yourself (e.g. via a map or conditional lookup).
 - Each thread's state casting uses the enum from the matching config entry. If the `graph_name` is not configured, the enum cast will not apply (state behaves as a raw string). Document or validate `graph_name` creation to avoid surprises.
 - Metadata and events are entirely isolated per thread—even across different graphs.
-- To mark completion with `finished_at`, either add a self-edge on a terminal state (so an additional run triggers the mark) or extend the Graph to set it when first entering a terminal state.
+- `finished_at` is set automatically when a thread transitions into a terminal state. A `GraphFinished` event is dispatched at the same time.
 
 ### Retrieving enum metadata dynamically
 If you need the enum class for a given thread:
@@ -321,9 +315,10 @@ Check for `null` if the graph might not be configured.
 - `Graph::addEdge(From, To)` — define allowed transitions
 - `Graph::neighbors(State): array` — list next states
 - `Graph::canTransition(From, To): bool` — check if transition is allowed
-- `Graph::assert(From, To): void` — throws on invalid transitions
+- `Graph::assertValidTransition(From, To): void` — throws `InvalidStateTransition` on invalid transitions
 - `Graph::isTerminal(State): bool` — true when no outgoing edges
 - `Graph::run(Context): void` — execute one step and persist side effects
+- `GraphFinished` event — dispatched when a thread reaches a terminal state (carries `thread`, `graphName`, `finalState`)
 
 ## Data model
 Tables (published migration):
