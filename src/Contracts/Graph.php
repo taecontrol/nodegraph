@@ -3,7 +3,7 @@
 namespace Taecontrol\NodeGraph\Contracts;
 
 use BackedEnum;
-use InvalidArgumentException;
+use Taecontrol\NodeGraph\Exceptions\InvalidStateTransition;
 
 /**
  * Interface Graph
@@ -61,9 +61,9 @@ interface Graph
      * @param  TState  $from
      * @param  TState  $to
      *
-     * @throws InvalidArgumentException if the transition is not allowed
+     * @throws InvalidStateTransition if the transition is not allowed
      */
-    public function assert($from, $to): void;
+    public function assertValidTransition($from, $to): void;
 
     /**
      * Checks if the given state is a terminal state.
