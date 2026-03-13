@@ -316,10 +316,10 @@ $enumClass = collect(config('nodegraph.graphs'))
 Check for `null` if the graph might not be configured.
 
 ## API cheatsheet
-- `Graph::addEdge(From, To)` — define allowed transitions
-- `Graph::neighbors(State): array` — list next states
-- `Graph::canTransition(From, To): bool` — check if transition is allowed
-- `Graph::assertValidTransition(From, To): void` — throws `InvalidStateTransition` on invalid transitions
+- `Graph::addEdge(sourceState, targetState)` — define allowed transitions
+- `Graph::neighborsOf(State): array` — list outgoing states from the given state
+- `Graph::canTransition(sourceState, targetState): bool` — check if transition is allowed
+- `Graph::assertValidTransition(sourceState, targetState): void` — throws `InvalidStateTransition` on invalid transitions
 - `Graph::isTerminal(State): bool` — true when no outgoing edges
 - `Graph::run(Context): void` — execute one step and persist side effects
 - `GraphFinished` event — dispatched when a thread reaches a terminal state (carries `thread`, `graphName`, `finalState`)

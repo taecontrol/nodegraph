@@ -22,48 +22,48 @@ interface Graph
      *
      * @return TState
      */
-    public function initialState();
+    public function initialState(): BackedEnum;
 
     /**
      * Adds a new State to the graph.
      *
      * @param  TState  $state
      */
-    public function addState($state): void;
+    public function addState($state): static;
 
     /**
      * Adds a directed edge from one state to another.
      *
-     * @param  TState  $from
-     * @param  TState  $to
+     * @param  TState  $sourceState
+     * @param  TState  $targetState
      */
-    public function addEdge($from, $to): void;
+    public function addEdge($sourceState, $targetState): static;
 
     /**
-     * Returns the neighboring states of a given state.
+     * Returns the outgoing neighboring states of the given state.
      *
      * @param  TState  $state
      * @return array<int, TState>
      */
-    public function neighbors($state): array;
+    public function neighborsOf($state): array;
 
     /**
      * Checks if a transition from one state to another is possible.
      *
-     * @param  TState  $from
-     * @param  TState  $to
+     * @param  TState  $sourceState
+     * @param  TState  $targetState
      */
-    public function canTransition($from, $to): bool;
+    public function canTransition($sourceState, $targetState): bool;
 
     /**
-     * Asserts that a transition from one state to another is possible.
+     * Asserts that a transition from one state to another is valid.
      *
-     * @param  TState  $from
-     * @param  TState  $to
+     * @param  TState  $sourceState
+     * @param  TState  $targetState
      *
      * @throws InvalidStateTransition if the transition is not allowed
      */
-    public function assertValidTransition($from, $to): void;
+    public function assertValidTransition($sourceState, $targetState): void;
 
     /**
      * Checks if the given state is a terminal state.

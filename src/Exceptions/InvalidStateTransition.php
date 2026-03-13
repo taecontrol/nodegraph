@@ -8,8 +8,8 @@ use RuntimeException;
 class InvalidStateTransition extends RuntimeException
 {
     public function __construct(
-        public readonly BackedEnum $from,
-        public readonly BackedEnum $to,
+        public readonly BackedEnum $sourceState,
+        public readonly BackedEnum $targetState,
         public readonly array $allowedTransitions = [],
     ) {
         $allowed = implode(', ', array_map(
@@ -18,8 +18,22 @@ class InvalidStateTransition extends RuntimeException
         ));
 
         parent::__construct(
-            "Invalid state transition from [{$from->value}] to [{$to->value}]."
-            .($allowed ? " Allowed transitions from [{$from->value}]: [{$allowed}]." : ''),
+            "Invalid state transition from [{$sourceState->value}] to [{$targetState->value}]."
+            .($allowed ? " Allowed transitions from [{$sourceState->value}]: [{$allowed}]." : ''),
         );
+    }
+
+    /**
+     * Get the exception's context information for logging.
+     *
+     * @return array<string, mixed>
+     */
+    public function context(): array
+    {
+        return [
+            'source_state'        => $this->sourceState->value,
+            'target_state'        => $this->targetState->value,
+            'allowed_transitions' => array_map(fn (BackedEnum $s) => $s->value, $this->allowedTransitions),
+        ];
     }
 }

@@ -21,9 +21,11 @@ use Taecontrol\NodeGraph\Models\Thread;
 abstract class Graph implements Contracts\Graph
 {
     /**
-     * @var array <int|string, list<TState>>
+     * Adjacency list: state value => list of outgoing target states.
+     *
+     * @var array<string, list<TState>>
      */
-    private array $nodes = [];
+    private array $edges = [];
 
     public function __construct()
     {
@@ -40,7 +42,7 @@ abstract class Graph implements Contracts\Graph
      *
      * @return TState
      */
-    abstract public function initialState();
+    abstract public function initialState(): BackedEnum;
 
     /**
      * Runs the graph starting from the initial state.
@@ -101,67 +103,70 @@ abstract class Graph implements Contracts\Graph
     }
 
     /**
-     * Adds a new State to the graph.
+     * Registers a state in the edge list with no outgoing edges.
+     * Called automatically by addEdge() for both endpoints.
      *
      * @param  TState  $state
      */
-    public function addState($state): void
+    public function addState($state): static
     {
-        if (! array_key_exists($state->value, $this->nodes)) {
-            $this->nodes[$state->value] = [];
+        if (! array_key_exists($state->value, $this->edges)) {
+            $this->edges[$state->value] = [];
         }
+        return $this;
     }
 
     /**
      * Adds a directed edge from one state to another.
      *
-     * @param  TState  $from
-     * @param  TState  $to
+     * @param  TState  $sourceState
+     * @param  TState  $targetState
      */
-    public function addEdge($from, $to): void
+    public function addEdge($sourceState, $targetState): static
     {
-        $this->addState($from);
-        $this->addState($to);
+        $this->addState($sourceState);
+        $this->addState($targetState);
 
-        if (! in_array($to, $this->nodes[$from->value], true)) {
-            $this->nodes[$from->value][] = $to;
+        if (! in_array($targetState, $this->edges[$sourceState->value], true)) {
+            $this->edges[$sourceState->value][] = $targetState;
         }
+        return $this;
     }
 
     /**
-     * Returns the neighboring states of a given state.
+     * Returns the outgoing neighboring states of the given state.
      *
      * @param  TState  $state
      * @return array<int, TState>
      */
-    public function neighbors($state): array
+    public function neighborsOf($state): array
     {
-        return $this->nodes[$state->value] ?? [];
+        return $this->edges[$state->value] ?? [];
     }
 
     /**
      * Checks if a transition from one state to another is possible.
      *
-     * @param  TState  $from
-     * @param  TState  $to
+     * @param  TState  $sourceState
+     * @param  TState  $targetState
      */
-    public function canTransition($from, $to): bool
+    public function canTransition($sourceState, $targetState): bool
     {
-        return in_array($to, $this->neighbors($from), true);
+        return in_array($targetState, $this->neighborsOf($sourceState), true);
     }
 
     /**
      * Asserts that a transition from one state to another is valid.
      *
-     * @param  TState  $from
-     * @param  TState  $to
+     * @param  TState  $sourceState
+     * @param  TState  $targetState
      *
      * @throws InvalidStateTransition if the transition is not allowed
      */
-    public function assertValidTransition($from, $to): void
+    public function assertValidTransition($sourceState, $targetState): void
     {
-        if (! $this->canTransition($from, $to)) {
-            throw new InvalidStateTransition($from, $to, $this->neighbors($from));
+        if (! $this->canTransition($sourceState, $targetState)) {
+            throw new InvalidStateTransition($sourceState, $targetState, $this->neighborsOf($sourceState));
         }
     }
 
@@ -172,7 +177,7 @@ abstract class Graph implements Contracts\Graph
      */
     public function isTerminal($state): bool
     {
-        return $this->neighbors($state) === [];
+        return $this->neighborsOf($state) === [];
     }
 
     /**

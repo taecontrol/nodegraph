@@ -24,12 +24,12 @@ beforeEach(function () {
     ]);
 });
 
-it('defines neighbors and terminal states correctly', function () {
+it('knows which states are reachable from each state and which states are terminal', function () {
     $graph = new TestGraph;
 
-    expect($graph->neighbors(SampleState::Start))->toEqual([SampleState::Middle]);
-    expect($graph->neighbors(SampleState::Middle))->toEqual([SampleState::End]);
-    expect($graph->neighbors(SampleState::End))->toEqual([]);
+    expect($graph->neighborsOf(SampleState::Start))->toEqual([SampleState::Middle]);
+    expect($graph->neighborsOf(SampleState::Middle))->toEqual([SampleState::End]);
+    expect($graph->neighborsOf(SampleState::End))->toEqual([]);
 
     expect($graph->canTransition(SampleState::Start, SampleState::Middle))->toBeTrue();
     expect($graph->canTransition(SampleState::Start, SampleState::End))->toBeFalse();
@@ -38,7 +38,7 @@ it('defines neighbors and terminal states correctly', function () {
     expect($graph->isTerminal(SampleState::Start))->toBeFalse();
 });
 
-it('asserts invalid transitions', function () {
+it('throws on an invalid state transition before any side effects occur', function () {
     $graph = new TestGraph;
     $graph->assertValidTransition(SampleState::Start, SampleState::Middle);
 
@@ -46,7 +46,7 @@ it('asserts invalid transitions', function () {
         ->toThrow(InvalidStateTransition::class);
 });
 
-it('runs and advances thread state, creating metadata and checkpoints', function () {
+it('advances thread state one step at a time', function () {
     $graph = new TestGraph;
     /** @var Thread $thread */
     $thread = ThreadFactory::new()->create();
@@ -62,38 +62,14 @@ it('runs and advances thread state, creating metadata and checkpoints', function
     expect($thread->started_at)->not->toBeNull();
     expect($thread->finished_at)->toBeNull();
 
-    expect($thread->metadata)->toHaveKey('start');
-    expect($thread->metadata['start'])->toHaveKey('from');
-    expect($thread->metadata['start']['from'])->toBe('start');
-    expect($thread->metadata['start'])->toHaveKey('execution_time');
-
-    $cp1 = $thread->checkpoints()->latest('id')->first();
-    expect($cp1->state)->toBe(SampleState::Middle);
-    expect($cp1->metadata)->toBeArray();
-    expect($cp1->metadata)->toHaveKey('start');
-
-    Event::assertDispatched(function (TestEvent $event) {
-        return $event->name === 'start';
-    });
-
     // Second run: Middle -> End
-    Event::fake();
     $graph->run($context);
 
     $thread->refresh();
     expect($thread->current_state)->toBe(SampleState::End);
     expect($thread->finished_at)->not->toBeNull();
 
-    $cp2 = $thread->checkpoints()->latest('id')->first();
-    expect($cp2->state)->toBe(SampleState::End);
-
-    Event::assertDispatched(function (TestEvent $event) {
-        return $event->name === 'middle';
-    });
-    Event::assertDispatched(GraphFinished::class);
-
     // Third run: End is terminal, run() is a no-op
-    Event::fake();
     $checkpointCountBefore = $thread->checkpoints()->count();
     $metadataBefore = $thread->metadata;
 
@@ -103,6 +79,76 @@ it('runs and advances thread state, creating metadata and checkpoints', function
     expect($thread->current_state)->toBe(SampleState::End);
     expect($thread->checkpoints()->count())->toBe($checkpointCountBefore);
     expect($thread->metadata)->toBe($metadataBefore);
+});
+
+it('records metadata for each executed state', function () {
+    $graph = new TestGraph;
+    /** @var Thread $thread */
+    $thread = ThreadFactory::new()->create();
+    $context = new TestContext($thread);
+
+    Event::fake();
+
+    $graph->run($context);
+
+    $thread->refresh();
+    expect($thread->metadata)->toHaveKey('start');
+    expect($thread->metadata['start'])->toHaveKey('from');
+    expect($thread->metadata['start']['from'])->toBe('start');
+    expect($thread->metadata['start'])->toHaveKey('execution_time');
+
+    $graph->run($context);
+
+    $thread->refresh();
+    expect($thread->metadata)->toHaveKey('middle');
+});
+
+it('creates a checkpoint for each transition', function () {
+    $graph = new TestGraph;
+    /** @var Thread $thread */
+    $thread = ThreadFactory::new()->create();
+    $context = new TestContext($thread);
+
+    Event::fake();
+
+    $graph->run($context);
+
+    $cp1 = $thread->checkpoints()->latest('id')->first();
+    expect($cp1->state)->toBe(SampleState::Middle);
+    expect($cp1->metadata)->toBeArray();
+    expect($cp1->metadata)->toHaveKey('start');
+
+    $graph->run($context);
+
+    $cp2 = $thread->checkpoints()->latest('id')->first();
+    expect($cp2->state)->toBe(SampleState::End);
+});
+
+it('dispatches node events after each transition', function () {
+    $graph = new TestGraph;
+    /** @var Thread $thread */
+    $thread = ThreadFactory::new()->create();
+    $context = new TestContext($thread);
+
+    Event::fake();
+
+    $graph->run($context);
+
+    Event::assertDispatched(function (TestEvent $event) {
+        return $event->name === 'start';
+    });
+
+    Event::fake();
+    $graph->run($context);
+
+    Event::assertDispatched(function (TestEvent $event) {
+        return $event->name === 'middle';
+    });
+    Event::assertDispatched(GraphFinished::class);
+
+    Event::fake();
+    $graph->run($context);
+
     Event::assertNotDispatched(TestEvent::class);
 });
 
@@ -165,7 +211,7 @@ it('treats self-edge state as non-terminal and executes normally', function () {
     Event::assertDispatched(GraphFinished::class);
 });
 
-it('throws before side effects on invalid transition', function () {
+it('throws when run attempts invalid transition and leaves thread unchanged', function () {
     config()->set('nodegraph.graphs', [
         [
             'name' => 'default',
@@ -219,7 +265,7 @@ it('dispatches GraphFinished with correct payload', function () {
     });
 });
 
-it('rolls back all changes when createCheckpoint throws', function () {
+it('leaves thread unchanged when persistence fails during transition', function () {
     $graph = new class extends TestGraph
     {
         protected function createCheckpoint($thread, $decision): void
@@ -238,7 +284,7 @@ it('rolls back all changes when createCheckpoint throws', function () {
     expect($thread->checkpoints()->count())->toBe(0);
 });
 
-it('rolls back initialization when failure on null-state thread', function () {
+it('leaves uninitialized thread unchanged when persistence fails on first run', function () {
     $graph = new class extends TestGraph
     {
         protected function createCheckpoint($thread, $decision): void
@@ -257,7 +303,7 @@ it('rolls back initialization when failure on null-state thread', function () {
     expect($thread->started_at)->toBeNull();
 });
 
-it('rolls back terminal transition on failure', function () {
+it('leaves thread in previous state when persistence fails during terminal transition', function () {
     $graph = new class extends TestGraph
     {
         protected function createCheckpoint($thread, $decision): void
@@ -340,7 +386,7 @@ it('is retryable after rollback', function () {
     expect($thread->checkpoints()->count())->toBe(1);
 });
 
-it('works inside an outer transaction (savepoints)', function () {
+it('succeeds when run inside an outer transaction', function () {
     DB::beginTransaction();
 
     $graph = new TestGraph;
