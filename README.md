@@ -78,9 +78,13 @@ return [
 3. Resolve the Node for the current state and execute it.
 4. Validate the transition (`assertValidTransition`) before any side effects. Throws `InvalidStateTransition` if the node returns an undeclared next state.
 5. The Node's Decision metadata is augmented with `state` and `execution_time` (seconds, float).
-6. Thread metadata is merged under the key of the current state's enum value.
-7. A checkpoint is created with merged metadata; Decision events are dispatched.
-8. Thread state advances. If the new state is terminal, `finished_at` is set and a `GraphFinished` event is dispatched.
+6. Inside a database transaction (with `lockForUpdate()` on existing threads):
+   - Thread metadata is merged under the key of the current state's enum value.
+   - A checkpoint is created with merged metadata.
+   - Thread state advances. If the new state is terminal, `finished_at` is set.
+7. After the transaction commits, Decision events are dispatched. If the new state is terminal, a `GraphFinished` event is dispatched.
+
+All database writes in step 6 are atomic — they succeed together or roll back together. Events in step 7 only fire after a successful commit, so listeners always see consistent data.
 
 ## Quickstart (single graph)
 
