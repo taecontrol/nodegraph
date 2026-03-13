@@ -3,8 +3,9 @@
 namespace Taecontrol\NodeGraph;
 
 use BackedEnum;
-use InvalidArgumentException;
 use Taecontrol\NodeGraph\Contracts\HasNode;
+use Taecontrol\NodeGraph\Events\GraphFinished;
+use Taecontrol\NodeGraph\Exceptions\InvalidStateTransition;
 use Taecontrol\NodeGraph\Models\Thread;
 
 /**
@@ -59,28 +60,33 @@ abstract class Graph implements Contracts\Graph
         /** @var TState $currentState */
         $currentState = $thread->current_state;
 
-        if ($this->isTerminal($currentState) && $this->canTransition($currentState, $currentState)) {
+        if ($this->isTerminal($currentState)) {
             return;
         }
 
         /** @var Node $node */
         $node = app($currentState->node());
-
         $decision = $node->execute($context);
+
+        // Validate transition BEFORE any side effects
+        $this->assertValidTransition($currentState, $decision->nextState());
 
         $this->updateThreadMetadata($thread, $decision->metadata());
         $this->createCheckpoint($thread, $decision);
         $this->dispatchEvents($decision);
 
-        if (! $this->isTerminal($currentState) && $decision->nextState() !== null) {
-            $canTransition = $this->canTransition($currentState, $decision->nextState());
-        } else {
-            $canTransition = $this->canTransition($currentState, $currentState);
+        $thread->current_state = $decision->nextState();
+
+        if ($this->isTerminal($decision->nextState())) {
+            $thread->finished_at = now();
+            $thread->save();
+
+            event(new GraphFinished($thread, $thread->graph_name, $decision->nextState()));
+
+            return;
         }
 
-        if ($canTransition) {
-            $this->updateThreadState($context, $decision->nextState());
-        }
+        $thread->save();
     }
 
     /**
@@ -139,12 +145,12 @@ abstract class Graph implements Contracts\Graph
      * @param  TState  $from
      * @param  TState  $to
      *
-     * @throws InvalidArgumentException if the transition is not allowed
+     * @throws InvalidStateTransition if the transition is not allowed
      */
-    public function assert($from, $to): void
+    public function assertValidTransition($from, $to): void
     {
         if (! $this->canTransition($from, $to)) {
-            throw new InvalidArgumentException("Invalid state transition: $from->value → $to->value");
+            throw new InvalidStateTransition($from, $to, $this->neighbors($from));
         }
     }
 
@@ -173,33 +179,6 @@ abstract class Graph implements Contracts\Graph
     }
 
     /**
-     * Updates the current state of the thread in the context.
-     *
-     * @param  TContext  $context
-     * @param  TState|null  $newState
-     */
-    protected function updateThreadState($context, $newState): Thread
-    {
-        $thread = $context->thread();
-
-        if ($thread->current_state !== null) {
-            /** @var TState $current */
-            $current = $thread->current_state;
-            if ($this->isTerminal($current)) {
-                $thread->finished_at = now();
-                $thread->save();
-            }
-        }
-
-        if ($newState !== null && $thread->current_state !== $newState) {
-            $thread->current_state = $newState;
-            $thread->save();
-        }
-
-        return $thread;
-    }
-
-    /**
      * Creates a checkpoint for the thread based on the decision.
      *
      * @param  TThread  $thread
@@ -209,7 +188,7 @@ abstract class Graph implements Contracts\Graph
     {
         $thread->checkpoints()->create([
             'graph_name' => $thread->graph_name,
-            'state' => $decision->nextState() ?? $thread->current_state,
+            'state' => $decision->nextState(),
             'metadata' => array_merge($thread->metadata ?? [], $decision->metadata()),
         ]);
     }

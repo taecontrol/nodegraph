@@ -13,8 +13,8 @@ use Taecontrol\NodeGraph\Contracts\HasNode;
 abstract class Decision implements Contracts\HasMetadata
 {
     public function __construct(
-        /** @var TState|null */
-        protected $nextState = null,
+        /** @var TState */
+        protected $nextState,
         /** @var array<string, mixed> */
         protected array $metadata = [],
         /** @var array<int, mixed> */
