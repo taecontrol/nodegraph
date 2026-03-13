@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Taecontrol\NodeGraph\Database\Factories\ThreadFactory;
 use Taecontrol\NodeGraph\Models\Thread;
@@ -107,10 +108,7 @@ it('runs and advances thread state, creating metadata and checkpoints', function
 
 it('does not execute node when state is terminal', function () {
     $graph = new TestGraph;
-    $thread = ThreadFactory::new()->create([
-        'current_state' => SampleState::End,
-        'started_at' => now(),
-    ]);
+    $thread = ThreadFactory::new()->started(SampleState::End)->create();
     $context = new TestContext($thread);
 
     Event::fake();
@@ -125,10 +123,7 @@ it('does not execute node when state is terminal', function () {
 
 it('remains inert across multiple run calls on terminal state', function () {
     $graph = new TestGraph;
-    $thread = ThreadFactory::new()->create([
-        'current_state' => SampleState::End,
-        'started_at' => now(),
-    ]);
+    $thread = ThreadFactory::new()->started(SampleState::End)->create();
     $context = new TestContext($thread);
 
     Event::fake();
@@ -156,10 +151,7 @@ it('treats self-edge state as non-terminal and executes normally', function () {
     expect($graph->isTerminal(SelfEdgeState::Processing))->toBeFalse();
     expect($graph->isTerminal(SelfEdgeState::Done))->toBeTrue();
 
-    $thread = ThreadFactory::new()->create([
-        'current_state' => SelfEdgeState::Processing,
-        'started_at' => now(),
-    ]);
+    $thread = ThreadFactory::new()->started(SelfEdgeState::Processing)->create();
     $context = new TestContext($thread);
 
     Event::fake();
@@ -182,10 +174,7 @@ it('throws before side effects on invalid transition', function () {
     ]);
 
     $graph = new BadTransitionGraph;
-    $thread = ThreadFactory::new()->create([
-        'current_state' => BadTransitionState::A,
-        'started_at' => now(),
-    ]);
+    $thread = ThreadFactory::new()->started(BadTransitionState::A)->create();
     $context = new TestContext($thread);
 
     Event::fake();
@@ -201,10 +190,7 @@ it('throws before side effects on invalid transition', function () {
 
 it('sets finished_at when transitioning to terminal state', function () {
     $graph = new TestGraph;
-    $thread = ThreadFactory::new()->create([
-        'current_state' => SampleState::Middle,
-        'started_at' => now(),
-    ]);
+    $thread = ThreadFactory::new()->started(SampleState::Middle)->create();
     $context = new TestContext($thread);
 
     Event::fake();
@@ -219,10 +205,7 @@ it('sets finished_at when transitioning to terminal state', function () {
 
 it('dispatches GraphFinished with correct payload', function () {
     $graph = new TestGraph;
-    $thread = ThreadFactory::new()->create([
-        'current_state' => SampleState::Middle,
-        'started_at' => now(),
-    ]);
+    $thread = ThreadFactory::new()->started(SampleState::Middle)->create();
     $context = new TestContext($thread);
 
     Event::fake();
@@ -234,4 +217,160 @@ it('dispatches GraphFinished with correct payload', function () {
             && $event->graphName === 'default'
             && $event->finalState === SampleState::End;
     });
+});
+
+it('rolls back all changes when createCheckpoint throws', function () {
+    $graph = new class extends TestGraph
+    {
+        protected function createCheckpoint($thread, $decision): void
+        {
+            throw new \RuntimeException('checkpoint failed');
+        }
+    };
+
+    $thread = ThreadFactory::new()->started(SampleState::Start)->create();
+    $context = new TestContext($thread);
+
+    expect(fn () => $graph->run($context))->toThrow(\RuntimeException::class, 'checkpoint failed');
+
+    $thread->refresh();
+    expect($thread->current_state)->toBe(SampleState::Start);
+    expect($thread->checkpoints()->count())->toBe(0);
+});
+
+it('rolls back initialization when failure on null-state thread', function () {
+    $graph = new class extends TestGraph
+    {
+        protected function createCheckpoint($thread, $decision): void
+        {
+            throw new \RuntimeException('checkpoint failed');
+        }
+    };
+
+    $thread = ThreadFactory::new()->uninitialized()->create();
+    $context = new TestContext($thread);
+
+    expect(fn () => $graph->run($context))->toThrow(\RuntimeException::class, 'checkpoint failed');
+
+    $thread->refresh();
+    expect($thread->current_state)->toBeNull();
+    expect($thread->started_at)->toBeNull();
+});
+
+it('rolls back terminal transition on failure', function () {
+    $graph = new class extends TestGraph
+    {
+        protected function createCheckpoint($thread, $decision): void
+        {
+            throw new \RuntimeException('checkpoint failed');
+        }
+    };
+
+    $thread = ThreadFactory::new()->started(SampleState::Middle)->create();
+    $context = new TestContext($thread);
+
+    expect(fn () => $graph->run($context))->toThrow(\RuntimeException::class, 'checkpoint failed');
+
+    $thread->refresh();
+    expect($thread->current_state)->toBe(SampleState::Middle);
+    expect($thread->finished_at)->toBeNull();
+    expect($thread->checkpoints()->count())->toBe(0);
+});
+
+it('does not dispatch events on rollback', function () {
+    Event::fake();
+
+    $graph = new class extends TestGraph
+    {
+        protected function createCheckpoint($thread, $decision): void
+        {
+            throw new \RuntimeException('checkpoint failed');
+        }
+    };
+
+    $thread = ThreadFactory::new()->started(SampleState::Middle)->create();
+    $context = new TestContext($thread);
+
+    try {
+        $graph->run($context);
+    } catch (\RuntimeException) {
+    }
+
+    Event::assertNotDispatched(TestEvent::class);
+    Event::assertNotDispatched(GraphFinished::class);
+});
+
+it('is retryable after rollback', function () {
+    $failOnce = new class
+    {
+        public static bool $shouldFail = true;
+    };
+
+    $graph = new class($failOnce) extends TestGraph
+    {
+        public function __construct(private object $flag)
+        {
+            parent::__construct();
+        }
+
+        protected function createCheckpoint($thread, $decision): void
+        {
+            if ($this->flag::$shouldFail) {
+                $this->flag::$shouldFail = false;
+
+                throw new \RuntimeException('checkpoint failed');
+            }
+
+            parent::createCheckpoint($thread, $decision);
+        }
+    };
+
+    $thread = ThreadFactory::new()->started(SampleState::Start)->create();
+    $context = new TestContext($thread);
+
+    // First run fails
+    expect(fn () => $graph->run($context))->toThrow(\RuntimeException::class);
+    $thread->refresh();
+    expect($thread->current_state)->toBe(SampleState::Start);
+
+    // Second run succeeds
+    $graph->run($context);
+    $thread->refresh();
+    expect($thread->current_state)->toBe(SampleState::Middle);
+    expect($thread->checkpoints()->count())->toBe(1);
+});
+
+it('works inside an outer transaction (savepoints)', function () {
+    DB::beginTransaction();
+
+    $graph = new TestGraph;
+    $thread = ThreadFactory::new()->started(SampleState::Start)->create();
+    $context = new TestContext($thread);
+
+    Event::fake();
+    $graph->run($context);
+
+    DB::commit();
+
+    $thread->refresh();
+    expect($thread->current_state)->toBe(SampleState::Middle);
+    expect($thread->checkpoints()->count())->toBe(1);
+    Event::assertDispatched(TestEvent::class);
+});
+
+it('outer transaction rollback undoes graph run', function () {
+    $graph = new TestGraph;
+    $thread = ThreadFactory::new()->started(SampleState::Start)->create();
+    $context = new TestContext($thread);
+
+    DB::beginTransaction();
+
+    Event::fake();
+    $graph->run($context);
+
+    DB::rollBack();
+
+    $thread->refresh();
+    expect($thread->current_state)->toBe(SampleState::Start);
+    expect($thread->checkpoints()->count())->toBe(0);
 });

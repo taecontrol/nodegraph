@@ -51,10 +51,11 @@ abstract class Graph implements Contracts\Graph
     {
         $thread = $context->thread();
 
-        if ($thread->current_state === null) {
+        $isNewThread = $thread->current_state === null;
+
+        if ($isNewThread) {
             $thread->current_state = $this->initialState();
             $thread->started_at = now();
-            $thread->save();
         }
 
         /** @var TState $currentState */
@@ -71,22 +72,32 @@ abstract class Graph implements Contracts\Graph
         // Validate transition BEFORE any side effects
         $this->assertValidTransition($currentState, $decision->nextState());
 
-        $this->updateThreadMetadata($thread, $decision->metadata());
-        $this->createCheckpoint($thread, $decision);
+        $isTerminal = $this->isTerminal($decision->nextState());
+
+        $thread->getConnection()->transaction(function () use ($thread, $decision, $isNewThread, $isTerminal) {
+            if (! $isNewThread) {
+                $thread = $thread->lockForUpdate()->findOrFail($thread->id);
+            }
+
+            $this->updateThreadMetadata($thread, $decision->metadata());
+            $this->createCheckpoint($thread, $decision);
+
+            $thread->current_state = $decision->nextState();
+
+            if ($isTerminal) {
+                $thread->finished_at = now();
+            }
+
+            $thread->save();
+        });
+
+        $thread->refresh();
+
         $this->dispatchEvents($decision);
 
-        $thread->current_state = $decision->nextState();
-
-        if ($this->isTerminal($decision->nextState())) {
-            $thread->finished_at = now();
-            $thread->save();
-
+        if ($isTerminal) {
             event(new GraphFinished($thread, $thread->graph_name, $decision->nextState()));
-
-            return;
         }
-
-        $thread->save();
     }
 
     /**
@@ -170,12 +181,11 @@ abstract class Graph implements Contracts\Graph
      * @param  TThread  $thread
      * @param  array<string, mixed>  $metadata
      */
-    public function updateThreadMetadata($thread, array $metadata): void
+    protected function updateThreadMetadata($thread, array $metadata): void
     {
         $thread->metadata = array_merge($thread->metadata ?? [], [
             $thread->current_state->value => $metadata,
         ]);
-        $thread->save();
     }
 
     /**

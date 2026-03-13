@@ -18,4 +18,20 @@ class ThreadFactory extends Factory
             'metadata' => [],
         ];
     }
+
+    public function started($state): static
+    {
+        return $this->state(fn () => [
+            'current_state' => $state,
+            'started_at' => now(),
+        ]);
+    }
+
+    public function uninitialized(): static
+    {
+        return $this->state(fn () => [
+            'current_state' => null,
+            'started_at' => null,
+        ]);
+    }
 }
